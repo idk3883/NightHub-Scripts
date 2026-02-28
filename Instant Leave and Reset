@@ -1,0 +1,74 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- MAIN FRAME
+local main = Instance.new("Frame")
+main.Size = UDim2.fromScale(0.15,0.15)
+main.Position = UDim2.fromScale(0.8,0.4)
+main.BackgroundColor3 = Color3.fromRGB(20,20,20)
+main.Parent = gui
+main.Active = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
+Instance.new("UIStroke", main).Color = Color3.new(1,1,1)
+
+-- DRAGGING
+local dragging, dragStart, startPos
+
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-- BUTTON CREATOR
+local function createButton(text, positionY, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.fromScale(0.8,0.35)
+	btn.Position = UDim2.fromScale(0.1, positionY)
+	btn.Text = text
+	btn.TextScaled = true
+	btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Parent = main
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+	Instance.new("UIStroke", btn).Color = Color3.new(1,1,1)
+	btn.MouseButton1Click:Connect(callback)
+end
+
+-- Reset Button
+createButton("Reset", 0.05, function()
+	local character = player.Character
+	if character then
+		character:BreakJoints() -- instantly respawns player
+	end
+end)
+
+-- Leave Button
+createButton("Leave", 0.55, function()
+	player:Kick("You left the game via NightHub.") -- leaves the game
+end)
