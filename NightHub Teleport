@@ -1,0 +1,138 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local savedPosition = nil
+
+-- Update character on respawn
+player.CharacterAdded:Connect(function(char)
+	character = char
+	hrp = character:WaitForChild("HumanoidRootPart")
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.18, 0.16) -- Small
+frame.Position = UDim2.fromScale(0.4, 0.7)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Parent = gui
+frame.Active = true
+
+local frameCorner = Instance.new("UICorner", frame)
+frameCorner.CornerRadius = UDim.new(0,14)
+
+local frameStroke = Instance.new("UIStroke", frame)
+frameStroke.Color = Color3.new(1,1,1)
+frameStroke.Thickness = 1.5
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1,0.3)
+title.BackgroundTransparency = 1
+title.Text = "NightHub Tp"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- Set Position Button
+local setButton = Instance.new("TextButton")
+setButton.Size = UDim2.fromScale(0.9,0.28)
+setButton.Position = UDim2.fromScale(0.05,0.35)
+setButton.Text = "📍 Set Position"
+setButton.TextScaled = true
+setButton.Font = Enum.Font.Gotham
+setButton.BackgroundColor3 = Color3.fromRGB(30,30,30)
+setButton.TextColor3 = Color3.new(1,1,1)
+setButton.Parent = frame
+
+local setCorner = Instance.new("UICorner", setButton)
+setCorner.CornerRadius = UDim.new(0,12)
+
+local setStroke = Instance.new("UIStroke", setButton)
+setStroke.Color = Color3.new(1,1,1)
+setStroke.Thickness = 1.5
+
+-- Teleport Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.fromScale(0.9,0.28)
+tpButton.Position = UDim2.fromScale(0.05,0.68)
+tpButton.Text = "⚡ Teleport"
+tpButton.TextScaled = true
+tpButton.Font = Enum.Font.Gotham
+tpButton.BackgroundColor3 = Color3.fromRGB(30,30,30)
+tpButton.TextColor3 = Color3.new(1,1,1)
+tpButton.Parent = frame
+
+local tpCorner = Instance.new("UICorner", tpButton)
+tpCorner.CornerRadius = UDim.new(0,12)
+
+local tpStroke = Instance.new("UIStroke", tpButton)
+tpStroke.Color = Color3.new(1,1,1)
+tpStroke.Thickness = 1.5
+
+-- Button Logic
+setButton.MouseButton1Click:Connect(function()
+	if hrp then
+		savedPosition = hrp.CFrame
+		setButton.Text = "📍 Position Saved"
+		task.wait(1)
+		setButton.Text = "📍 Set Position"
+	end
+end)
+
+tpButton.MouseButton1Click:Connect(function()
+	if savedPosition and hrp then
+		hrp.CFrame = savedPosition
+	end
+end)
+
+-- Draggable
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
