@@ -1,0 +1,166 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Update on respawn
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = character:WaitForChild("Humanoid")
+end)
+
+-- Variables
+local infiniteJump = false
+
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+	if infiniteJump and humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.2,0.22)
+frame.Position = UDim2.fromScale(0.4,0.65)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Parent = gui
+frame.Active = true
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.new(1,1,1)
+stroke.Thickness = 1.5
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1,0.25)
+title.BackgroundTransparency = 1
+title.Text = "🌙 NightHub Jump"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- Jump Power Input Frame
+local inputFrame = Instance.new("Frame")
+inputFrame.Size = UDim2.fromScale(0.9,0.25)
+inputFrame.Position = UDim2.fromScale(0.05,0.32)
+inputFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+inputFrame.Parent = frame
+
+Instance.new("UICorner", inputFrame).CornerRadius = UDim.new(0,12)
+
+local inputStroke = Instance.new("UIStroke", inputFrame)
+inputStroke.Color = Color3.new(1,1,1)
+inputStroke.Thickness = 1.5
+
+-- TextBox
+local jumpBox = Instance.new("TextBox")
+jumpBox.Size = UDim2.fromScale(1,1)
+jumpBox.BackgroundTransparency = 1
+jumpBox.PlaceholderText = "📈 Set Jump Power (Default 50)"
+jumpBox.Text = ""
+jumpBox.TextColor3 = Color3.new(1,1,1)
+jumpBox.PlaceholderColor3 = Color3.fromRGB(200,200,200)
+jumpBox.TextScaled = true
+jumpBox.Font = Enum.Font.Gotham
+jumpBox.ClearTextOnFocus = false
+jumpBox.Parent = inputFrame
+
+jumpBox.FocusLost:Connect(function()
+	local num = tonumber(jumpBox.Text)
+	if num then
+		num = math.clamp(num, 0, 300)
+		if humanoid then
+			humanoid.JumpPower = num
+		end
+		jumpBox.Text = tostring(num)
+	else
+		jumpBox.Text = ""
+	end
+end)
+
+-- Infinite Jump Button Frame
+local buttonFrame = Instance.new("Frame")
+buttonFrame.Size = UDim2.fromScale(0.9,0.25)
+buttonFrame.Position = UDim2.fromScale(0.05,0.65)
+buttonFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+buttonFrame.Parent = frame
+
+Instance.new("UICorner", buttonFrame).CornerRadius = UDim.new(0,12)
+
+local buttonStroke = Instance.new("UIStroke", buttonFrame)
+buttonStroke.Color = Color3.new(1,1,1)
+buttonStroke.Thickness = 1.5
+
+-- Button
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromScale(1,1)
+button.BackgroundTransparency = 1
+button.Text = "🦘 Infinite Jump: OFF"
+button.TextColor3 = Color3.new(1,1,1)
+button.TextScaled = true
+button.Font = Enum.Font.Gotham
+button.Parent = buttonFrame
+
+button.MouseButton1Click:Connect(function()
+	infiniteJump = not infiniteJump
+	if infiniteJump then
+		button.Text = "🦘 Infinite Jump: ON"
+	else
+		button.Text = "🦘 Infinite Jump: OFF"
+	end
+end)
+
+-- Draggable
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+	or input.UserInputType == Enum.UserInputType.Touch then
+		
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement 
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
