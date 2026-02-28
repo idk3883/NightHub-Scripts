@@ -1,0 +1,143 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Update on respawn
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = character:WaitForChild("Humanoid")
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.18, 0.16)
+frame.Position = UDim2.fromScale(0.4, 0.7)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Active = true
+frame.Parent = gui
+
+local frameCorner = Instance.new("UICorner", frame)
+frameCorner.CornerRadius = UDim.new(0,14)
+
+local frameStroke = Instance.new("UIStroke", frame)
+frameStroke.Color = Color3.new(1,1,1)
+frameStroke.Thickness = 1.5
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1,0.35)
+title.BackgroundTransparency = 1
+title.Text = "NightHub Speed"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- Slider Background
+local sliderFrame = Instance.new("Frame")
+sliderFrame.Size = UDim2.fromScale(0.9,0.25)
+sliderFrame.Position = UDim2.fromScale(0.05,0.6)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+sliderFrame.Parent = frame
+
+local sliderCorner = Instance.new("UICorner", sliderFrame)
+sliderCorner.CornerRadius = UDim.new(0,12)
+
+local sliderStroke = Instance.new("UIStroke", sliderFrame)
+sliderStroke.Color = Color3.new(1,1,1)
+sliderStroke.Thickness = 1.5
+
+-- Slider Label
+local sliderLabel = Instance.new("TextLabel")
+sliderLabel.Size = UDim2.fromScale(1,1)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.Text = "⚡ Set Speed: 16"
+sliderLabel.TextColor3 = Color3.new(1,1,1)
+sliderLabel.TextScaled = true
+sliderLabel.Font = Enum.Font.Gotham
+sliderLabel.Parent = sliderFrame
+
+-- Drag Logic
+local draggingSlider = false
+local minSpeed = 0
+local maxSpeed = 100
+
+sliderFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		draggingSlider = true
+	end
+end)
+
+sliderFrame.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		draggingSlider = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		
+		local relativeX = math.clamp(
+			(input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X,
+			0,
+			1
+		)
+		
+		local newSpeed = math.floor(minSpeed + (maxSpeed - minSpeed) * relativeX)
+		
+		if humanoid then
+			humanoid.WalkSpeed = newSpeed
+		end
+		
+		sliderLabel.Text = "⚡ Set Speed: " .. newSpeed
+	end
+end)
+
+-- Draggable Frame
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
