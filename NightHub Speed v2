@@ -1,0 +1,125 @@
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Update humanoid on respawn
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = character:WaitForChild("Humanoid")
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.18,0.16)
+frame.Position = UDim2.fromScale(0.4,0.7)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Parent = gui
+frame.Active = true
+
+local frameCorner = Instance.new("UICorner", frame)
+frameCorner.CornerRadius = UDim.new(0,14)
+
+local frameStroke = Instance.new("UIStroke", frame)
+frameStroke.Color = Color3.new(1,1,1)
+frameStroke.Thickness = 1.5
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1,0.35)
+title.BackgroundTransparency = 1
+title.Text = "NightHub Speed"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- Input box frame
+local inputFrame = Instance.new("Frame")
+inputFrame.Size = UDim2.fromScale(0.9,0.3)
+inputFrame.Position = UDim2.fromScale(0.05,0.55)
+inputFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+inputFrame.Parent = frame
+
+local inputCorner = Instance.new("UICorner", inputFrame)
+inputCorner.CornerRadius = UDim.new(0,12)
+
+local inputStroke = Instance.new("UIStroke", inputFrame)
+inputStroke.Color = Color3.new(1,1,1)
+inputStroke.Thickness = 1.5
+
+-- TextBox
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.fromScale(1,1)
+speedBox.BackgroundTransparency = 1
+speedBox.PlaceholderText = "⚡ Set Speed (Default 16)"
+speedBox.Text = ""
+speedBox.TextColor3 = Color3.new(1,1,1)
+speedBox.PlaceholderColor3 = Color3.fromRGB(200,200,200)
+speedBox.TextScaled = true
+speedBox.Font = Enum.Font.Gotham
+speedBox.ClearTextOnFocus = false
+speedBox.Parent = inputFrame
+
+-- Apply speed when focus lost
+speedBox.FocusLost:Connect(function(enterPressed)
+	local num = tonumber(speedBox.Text)
+	if num then
+		num = math.clamp(num, 0, 300) -- safe range
+		if humanoid then
+			humanoid.WalkSpeed = num
+		end
+		speedBox.Text = tostring(num)
+	else
+		speedBox.Text = ""
+	end
+end)
+
+-- Draggable frame logic
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
