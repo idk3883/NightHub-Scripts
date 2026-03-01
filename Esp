@@ -1,0 +1,116 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local espEnabled = false
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- MAIN FRAME (Mini GUI)
+local main = Instance.new("Frame")
+main.Size = UDim2.fromScale(0.15,0.12)
+main.Position = UDim2.fromScale(0.8,0.25)
+main.BackgroundColor3 = Color3.fromRGB(20,20,20)
+main.Parent = gui
+main.Active = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
+Instance.new("UIStroke", main).Color = Color3.new(1,1,1)
+
+-- DRAGGING
+local dragging, dragStart, startPos
+
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-- ESP TOGGLE BUTTON
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.fromScale(0.8,0.6)
+toggleBtn.Position = UDim2.fromScale(0.1,0.2)
+toggleBtn.Text = "👁 ESP: OFF"
+toggleBtn.TextScaled = true
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.Parent = main
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
+Instance.new("UIStroke", toggleBtn).Color = Color3.new(1,1,1)
+
+-- ESP FUNCTION
+local function applyESP(targetPlayer)
+	if targetPlayer ~= player then
+		targetPlayer.CharacterAdded:Connect(function(char)
+			if espEnabled then
+				local highlight = Instance.new("Highlight")
+				highlight.Name = "NightHubESP"
+				highlight.FillColor = Color3.fromRGB(0,170,255)
+				highlight.OutlineColor = Color3.new(1,1,1)
+				highlight.Parent = char
+			end
+		end)
+
+		if targetPlayer.Character and espEnabled then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "NightHubESP"
+			highlight.FillColor = Color3.fromRGB(0,170,255)
+			highlight.OutlineColor = Color3.new(1,1,1)
+			highlight.Parent = targetPlayer.Character
+		end
+	end
+end
+
+local function removeESP()
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr.Character then
+			local h = plr.Character:FindFirstChild("NightHubESP")
+			if h then
+				h:Destroy()
+			end
+		end
+	end
+end
+
+-- Toggle Logic
+toggleBtn.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	
+	if espEnabled then
+		toggleBtn.Text = "👁 ESP: ON"
+		for _, plr in pairs(Players:GetPlayers()) do
+			applyESP(plr)
+		end
+	else
+		toggleBtn.Text = "👁 ESP: OFF"
+		removeESP()
+	end
+end)
+
+-- Apply to new players
+Players.PlayerAdded:Connect(function(plr)
+	if espEnabled then
+		applyESP(plr)
+	end
+end)
