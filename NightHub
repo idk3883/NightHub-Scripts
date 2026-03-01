@@ -1,0 +1,249 @@
+-- 🌙 NightHub V4.2 (Fixed Tab Rendering)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+if player.PlayerGui:FindFirstChild("NightHub") then
+	player.PlayerGui.NightHub:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "NightHub"
+gui.ResetOnSpawn = false
+gui.Parent = player.PlayerGui
+
+--------------------------------------------------
+-- Toggle Button
+--------------------------------------------------
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0,50,0,50)
+toggle.Position = UDim2.new(0,20,0,250)
+toggle.Text = "🌙"
+toggle.Font = Enum.Font.GothamBold
+toggle.TextScaled = true
+toggle.BackgroundColor3 = Color3.fromRGB(0,0,0)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.Parent = gui
+
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(1,0)
+Instance.new("UIStroke", toggle).Color = Color3.new(1,1,1)
+
+--------------------------------------------------
+-- Main Frame
+--------------------------------------------------
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0,0,0,0)
+main.Position = UDim2.new(0.5,-260,0.5,-180)
+main.BackgroundColor3 = Color3.fromRGB(15,15,15)
+main.Visible = false
+main.Active = true
+main.Draggable = true
+main.Parent = gui
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,18)
+Instance.new("UIStroke", main).Color = Color3.new(1,1,1)
+
+local open = false
+
+local function openUI()
+	main.Visible = true
+	main.Size = UDim2.new(0,0,0,0)
+	TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+		Size = UDim2.new(0,520,0,360)
+	}):Play()
+end
+
+local function closeUI()
+	local tween = TweenService:Create(main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+		Size = UDim2.new(0,0,0,0)
+	})
+	tween:Play()
+	tween.Completed:Connect(function()
+		main.Visible = false
+	end)
+end
+
+toggle.MouseButton1Click:Connect(function()
+	open = not open
+	if open then openUI() else closeUI() end
+end)
+
+--------------------------------------------------
+-- Tab System
+--------------------------------------------------
+
+local tabBar = Instance.new("Frame")
+tabBar.Size = UDim2.new(1,0,0,45)
+tabBar.BackgroundTransparency = 1
+tabBar.Parent = main
+
+local contentHolder = Instance.new("Frame")
+contentHolder.Size = UDim2.new(1,0,1,-45)
+contentHolder.Position = UDim2.new(0,0,0,45)
+contentHolder.BackgroundTransparency = 1
+contentHolder.Parent = main
+
+local tabs = {}
+local currentTab
+
+local function createTab(name, order)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0,150,1,0)
+	button.Position = UDim2.new(0,(order-1)*155,0,0)
+	button.Text = name
+	button.Font = Enum.Font.GothamMedium
+	button.TextSize = 15
+	button.TextColor3 = Color3.new(1,1,1)
+	button.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	button.Parent = tabBar
+	
+	Instance.new("UICorner", button).CornerRadius = UDim.new(0,10)
+	Instance.new("UIStroke", button).Color = Color3.new(1,1,1)
+
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1,0,1,0)
+	frame.BackgroundTransparency = 1
+	frame.Visible = false
+	frame.Parent = contentHolder
+	
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0,12)
+	layout.Parent = frame
+	
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0,20)
+	padding.PaddingLeft = UDim.new(0,25)
+	padding.Parent = frame
+
+	button.MouseButton1Click:Connect(function()
+		if currentTab then
+			currentTab.Visible = false
+		end
+		
+		frame.Visible = true
+		currentTab = frame
+	end)
+
+	tabs[name] = frame
+end
+
+createTab("Movement",1)
+createTab("Utilities",2)
+createTab("Teleports",3)
+
+tabs["Movement"].Visible = true
+currentTab = tabs["Movement"]
+
+--------------------------------------------------
+-- Styled Button
+--------------------------------------------------
+
+local function styledButton(text, parent)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0,240,0,40)
+	b.Text = text
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 14
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	b.Parent = parent
+	
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+	Instance.new("UIStroke", b).Color = Color3.new(1,1,1)
+	return b
+end
+
+--------------------------------------------------
+-- Movement
+--------------------------------------------------
+
+local function getHumanoid()
+	if player.Character then
+		return player.Character:FindFirstChildOfClass("Humanoid")
+	end
+end
+
+local wsBox = styledButton("Set WalkSpeed", tabs["Movement"])
+wsBox.MouseButton1Click:Connect(function()
+	local h = getHumanoid()
+	if h then h.WalkSpeed = 50 end
+end)
+
+local infJump = false
+local infBtn = styledButton("Infinite Jump", tabs["Movement"])
+
+UIS.JumpRequest:Connect(function()
+	if infJump then
+		local h = getHumanoid()
+		if h then
+			h:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)
+
+infBtn.MouseButton1Click:Connect(function()
+	infJump = not infJump
+end)
+
+styledButton("Reset Speed", tabs["Movement"]).MouseButton1Click:Connect(function()
+	local h = getHumanoid()
+	if h then h.WalkSpeed = 16 end
+end)
+
+--------------------------------------------------
+-- Utilities
+--------------------------------------------------
+
+styledButton("Instant Reset", tabs["Utilities"]).MouseButton1Click:Connect(function()
+	player.Character:BreakJoints()
+end)
+
+styledButton("Leave Game", tabs["Utilities"]).MouseButton1Click:Connect(function()
+	player:Kick("Left via NightHub")
+end)
+
+styledButton("Rejoin Server", tabs["Utilities"]).MouseButton1Click:Connect(function()
+	TeleportService:Teleport(game.PlaceId, player)
+end)
+
+local noclip = false
+local noclipBtn = styledButton("Noclip Toggle", tabs["Utilities"])
+
+RunService.Stepped:Connect(function()
+	if noclip and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+end)
+
+--------------------------------------------------
+-- Teleports
+--------------------------------------------------
+
+local savedPosition
+
+styledButton("Set Position", tabs["Teleports"]).MouseButton1Click:Connect(function()
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		savedPosition = player.Character.HumanoidRootPart.CFrame
+	end
+end)
+
+styledButton("Teleport to Saved", tabs["Teleports"]).MouseButton1Click:Connect(function()
+	if savedPosition and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.CFrame = savedPosition
+	end
+end)
